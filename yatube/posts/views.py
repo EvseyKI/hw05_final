@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,6 +12,7 @@ def paginator(request, post_list):
     paginator = Paginator(post_list, settings.POSTS_LIM)
     page_number = request.GET.get('page')
     return paginator.get_page(page_number)
+
 
 @cache_page(20, key_prefix="index_page")
 def index(request):
@@ -110,6 +110,7 @@ def add_comment(request, post_id):
         comment.post = post
         comment.save()
     return redirect('posts:post_detail', post_id=post_id)
+
 
 @login_required
 def follow_index(request):

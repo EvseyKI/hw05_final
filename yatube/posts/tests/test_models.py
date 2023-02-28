@@ -65,6 +65,7 @@ class PostModelTest(TestCase):
                     expected_value
                 )
 
+
 class GroupModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
