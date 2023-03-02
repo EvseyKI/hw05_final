@@ -14,7 +14,6 @@ def paginator(request, post_list):
     return paginator.get_page(page_number)
 
 
-@cache_page(20, key_prefix="index_page")
 def index(request):
     post_list = Post.objects.select_related('author', 'group')
     page_obj = paginator(request, post_list)

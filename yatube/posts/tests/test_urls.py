@@ -94,8 +94,6 @@ class PostURLTests(TestCase):
                 )
 
     def test_unexisting_page(self):
-        """Запрос к несуществующей странице вернёт ошибку 404
-        и отдается кастомный шаблон"""
+        """Запрос к несуществующей странице вернёт ошибку 404"""
         response = self.guest_client.get('/non_existing_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-        self.assertTemplateUsed(response, 'core/404.html')

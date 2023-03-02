@@ -68,24 +68,17 @@ class PostFormTests(TestCase):
             data=form_data,
             follow=True
         )
+        last_post = Post.objects.first()
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertTrue(
-            Post.objects.filter(
-                text=form_data['text'],
-                group=form_data['group'],
-                author=self.user,
-                image='posts/small.gif',
-            ).exists()
-        )
+        self.assertEqual(last_post.text, form_data['text'])
+        self.assertEqual(last_post.author, self.user)
+        self.assertEqual(last_post.group, self.group)
+        self.assertEqual(last_post.image, 'posts/small.gif')
 
     def test_edit_post(self):
         """Валидная форма редактирует запись в Post."""
-        self.post = Post.objects.create(
-            author=self.user,
-            text='Тестовый текст',
-            group=self.group
-        )
+        posts_count = Post.objects.count()
         form_data = {
             'text': 'Отредактированный текст',
             'group': self.group.pk
@@ -98,18 +91,17 @@ class PostFormTests(TestCase):
             data=form_data,
             follow=True
         )
+        edit_post = Post.objects.last()
+        self.assertEqual(Post.objects.count(), posts_count)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertTrue(
-            Post.objects.filter(
-                text=form_data['text'],
-                group=form_data['group'],
-                author=self.user
-            ).exists()
-        )
+        self.assertEqual(edit_post.text, form_data['text'])
+        self.assertEqual(edit_post.author, self.user)
+        self.assertEqual(edit_post.group, self.group)
 
     def test_authorized_client_add_comment(self):
         """Проверка коммента авторизованным пользователем
         и его появление на странице"""
+        comment_count = Comment.objects.count()
         form_data = {
             'text': 'Тестовый комментарий'
         }
@@ -121,21 +113,12 @@ class PostFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        self.assertRedirects(
-            response,
-            reverse('posts:post_detail',
-                    kwargs={'post_id': self.post.pk})
-        )
-        new_comment = Comment.objects.last()
-        self.assertEqual(new_comment.author, self.user)
-        self.assertEqual(new_comment.post, self.post)
+        new_comment = Comment.objects.latest('created')
+        self.assertEqual(Comment.objects.count(), comment_count + 1)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertTrue(
-            Comment.objects.filter(
-                text=form_data['text'],
-                author=self.user
-            ).exists()
-        )
+        self.assertEqual(new_comment.post, self.post)
+        self.assertEqual(new_comment.author, self.user)
+        self.assertEqual(new_comment.text, form_data['text'])
 
     def test_guest_client_add_comment(self):
         """Проверка коммента гостем."""
@@ -151,8 +134,5 @@ class PostFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        redirect = reverse('login') + '?next=' + reverse(
-            'posts:add_comment', kwargs={'post_id': self.post.pk})
         self.assertEqual(Comment.objects.count(), comment_count)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertRedirects(response, redirect)

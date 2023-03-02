@@ -149,10 +149,10 @@ class ViewsTests(TestCase):
             text='Текст кэша',
         )
         response = self.authorized_client.get(reverse('posts:index'))
-        delete_post = response.content
+        post = response.content
         Post.objects.filter(text='Текст кэша').delete()
         response = self.authorized_client.get(reverse('posts:index'))
-        self.assertEqual(delete_post, response.content)
+        self.assertEqual(post, response.content)
         cache.clear()
         response_clear = self.authorized_client.get(reverse('posts:index'))
         self.assertNotEqual(response_clear.content, response.content)
@@ -216,32 +216,57 @@ class FollowViewTest(TestCase):
         self.author_client.force_login(self.user)
         self.follower_client = Client()
         self.follower_client.force_login(self.follower)
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
 
     def test_follow(self):
         """Проверка подписки на автора"""
-        self.follower_client.get(
-            reverse('posts:profile_follow',
-                    kwargs={'username': self.user}))
-        self.assertEqual(Follow.objects.all().count(), 1)
+        count_follow = Follow.objects.count()
+        new_author = User.objects.create(username='new_user')
+        self.authorized_client.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': new_author.username}
+            )
+        )
+        follow = Follow.objects.last()
+        self.assertEqual(Follow.objects.count(), count_follow + 1)
+        self.assertEqual(follow.author, new_author)
+        self.assertEqual(follow.user, self.user)
 
     def test_unfollow(self):
         """Проверка отписки от автора"""
-        self.follower_client.get(
-            reverse('posts:profile_follow',
-                    kwargs={'username': self.user}))
-        self.follower_client.get(
-            reverse('posts:profile_unfollow',
-                    kwargs={'username': self.user}))
-        self.assertEqual(Follow.objects.all().count(), 0)
+        count_follow = Follow.objects.count()
+        new_author = User.objects.create(username='new_user')
+        self.authorized_client.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': new_author.username}
+            )
+        )
+        self.assertEqual(Follow.objects.count(), count_follow + 1)
+        self.authorized_client.get(
+            reverse(
+                'posts:profile_unfollow',
+                kwargs={'username': new_author.username}
+            )
+        )
+        self.assertEqual(Follow.objects.count(), count_follow)
 
-    def test_post_follow_unfollow(self):
-        """Проверка поста в подписках и без подписок"""
+    def test_follow_context(self):
+        """Проверка поста в подписках"""
         Follow.objects.create(
             user=self.follower,
             author=self.user)
         response = self.follower_client.get(
             reverse('posts:follow_index'))
         self.assertIn(self.post, response.context['page_obj'].object_list)
+
+    def test_unfollow_context(self):
+        """Проверка поста без подписок"""
+        Follow.objects.create(
+            user=self.follower,
+            author=self.user)
         response = self.author_client.get(
             reverse('posts:follow_index'))
         self.assertNotIn(self.post, response.context['page_obj'].object_list)

@@ -73,7 +73,7 @@ class Comment(models.Model):
     )
 
     def __str__(self):
-        return self.text
+        return self.text[:settings.TEXT_POSTS_LIM]
 
 
 class Follow(models.Model):
@@ -89,3 +89,11 @@ class Follow(models.Model):
         related_name='following',
         verbose_name='Автор'
     )
+
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(
+            name='unique_follow',
+            fields=['user', 'author'],
+            ),
+        )
