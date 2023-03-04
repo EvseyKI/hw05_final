@@ -75,7 +75,8 @@ class PostFormTests(TestCase):
         self.assertEqual(last_post.text, form_data['text'])
         self.assertEqual(last_post.author, self.user)
         self.assertEqual(last_post.group, self.group)
-        self.assertEqual(basename(last_post.image.file.name), form_data['image'].name)
+        self.assertEqual(basename(last_post.image.file.name),
+                         form_data['image'].name)
 
     def test_edit_post(self):
         """Валидная форма редактирует запись в Post."""
@@ -112,7 +113,8 @@ class PostFormTests(TestCase):
         self.assertEqual(edit_post.text, form_data['text'])
         self.assertEqual(edit_post.author, self.user)
         self.assertEqual(edit_post.group, self.group)
-        self.assertEqual(basename(edit_post.image.file.name), form_data['image'].name)
+        self.assertEqual(basename(edit_post.image.file.name),
+                         form_data['image'].name)
 
     def test_authorized_client_add_comment(self):
         """Проверка коммента авторизованным пользователем"""
