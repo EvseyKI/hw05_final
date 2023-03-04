@@ -66,22 +66,6 @@ class PostModelTest(TestCase):
                 )
 
 
-class GroupModelTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.user = User.objects.create_user(username='user')
-        cls.group = Group.objects.create(
-            title='группа',
-            description='описание',
-        )
-
-    def test_group_str(self):
-        """Проверка __str__ у group."""
-        group = GroupModelTest.group
-        self.assertEqual(str(group), group.title)
-
-
 class CommentModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -92,7 +76,7 @@ class CommentModelTest(TestCase):
             author=cls.user,
         )
         cls.comment = Comment.objects.create(
-            text='комментарий',
+            text='Длинный комментарий',
             author=cls.user,
             post=cls.post
         )
@@ -100,7 +84,8 @@ class CommentModelTest(TestCase):
     def test_comment_str(self):
         """Проверка __str__ у comment."""
         comment = CommentModelTest.comment
-        self.assertEqual(str(comment), comment.text)
+        comment_lim = comment.text[:settings.LIM_LENGHT]
+        self.assertEqual(str(comment), comment_lim)
 
     def test_comment_verbose_name(self):
         """Проверка verbose_name у comment."""

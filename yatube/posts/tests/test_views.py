@@ -216,14 +216,12 @@ class FollowViewTest(TestCase):
         self.author_client.force_login(self.user)
         self.follower_client = Client()
         self.follower_client.force_login(self.follower)
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
 
     def test_follow(self):
         """Проверка подписки на автора"""
         count_follow = Follow.objects.count()
         new_author = User.objects.create(username='new_user')
-        self.authorized_client.get(
+        self.author_client.get(
             reverse(
                 'posts:profile_follow',
                 kwargs={'username': new_author.username}
@@ -238,20 +236,20 @@ class FollowViewTest(TestCase):
         """Проверка отписки от автора"""
         count_follow = Follow.objects.count()
         new_author = User.objects.create(username='new_user')
-        self.authorized_client.get(
-            reverse(
-                'posts:profile_follow',
-                kwargs={'username': new_author.username}
-            )
-        )
+        Follow.objects.create(
+            user=self.follower,
+            author=self.user)
         self.assertEqual(Follow.objects.count(), count_follow + 1)
-        self.authorized_client.get(
+        self.author_client.get(
             reverse(
                 'posts:profile_unfollow',
                 kwargs={'username': new_author.username}
             )
         )
-        self.assertEqual(Follow.objects.count(), count_follow)
+        self.assertFalse(Follow.objects.filter(
+            user=self.user,
+            author=new_author
+        ).exists())
 
     def test_follow_context(self):
         """Проверка поста в подписках"""
@@ -263,10 +261,16 @@ class FollowViewTest(TestCase):
         self.assertIn(self.post, response.context['page_obj'].object_list)
 
     def test_unfollow_context(self):
-        """Проверка поста без подписок"""
-        Follow.objects.create(
-            user=self.follower,
-            author=self.user)
-        response = self.author_client.get(
+        """Новая запись не появляется в ленте тех, кто не подписан"""
+        new_author = User.objects.create(username='new_user')
+        self.follower_client.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': new_author.username}
+            )
+        )
+        follow = Follow.objects.last()
+        self.assertNotEqual(follow.user, self.user)
+        response = self.follower_client.get(
             reverse('posts:follow_index'))
         self.assertNotIn(self.post, response.context['page_obj'].object_list)

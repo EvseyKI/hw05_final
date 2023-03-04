@@ -85,7 +85,11 @@ class PostURLTests(TestCase):
 
     def test_accordance_urls_templates(self):
         """Проверяем cоответствие адресов и шаблонов."""
-        for url, template in self.private_urls + self.public_urls:
+        non_existing_page = [
+            ('/non_existing_page/', 'core/404.html'),
+        ]
+        for url, template in (self.private_urls + self.public_urls 
+            + non_existing_page):
             with self.subTest(url=url):
                 response = self.author_client.get(url)
                 self.assertTemplateUsed(

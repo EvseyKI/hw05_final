@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 from http import HTTPStatus
+from os.path import basename
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -8,7 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Group, Post, Comment
+from ..models import Comment, Group, Post
 
 User = get_user_model()
 
@@ -60,7 +61,7 @@ class PostFormTests(TestCase):
         )
         form_data = {
             'text': 'Тестовый текст',
-            'group': PostFormTests.group.pk,
+            'group': self.group.pk,
             'image': uploaded,
         }
         response = self.authorized_client.post(
@@ -74,14 +75,28 @@ class PostFormTests(TestCase):
         self.assertEqual(last_post.text, form_data['text'])
         self.assertEqual(last_post.author, self.user)
         self.assertEqual(last_post.group, self.group)
-        self.assertEqual(last_post.image, 'posts/small.gif')
+        self.assertEqual(basename(last_post.image.file.name), form_data['image'].name)
 
     def test_edit_post(self):
         """Валидная форма редактирует запись в Post."""
         posts_count = Post.objects.count()
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
+        uploaded = SimpleUploadedFile(
+            name='small1.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
         form_data = {
             'text': 'Отредактированный текст',
-            'group': self.group.pk
+            'group': self.group.pk,
+            'image': uploaded,
         }
         response = self.authorized_client.post(
             reverse(
@@ -97,10 +112,10 @@ class PostFormTests(TestCase):
         self.assertEqual(edit_post.text, form_data['text'])
         self.assertEqual(edit_post.author, self.user)
         self.assertEqual(edit_post.group, self.group)
+        self.assertEqual(basename(edit_post.image.file.name), form_data['image'].name)
 
     def test_authorized_client_add_comment(self):
-        """Проверка коммента авторизованным пользователем
-        и его появление на странице"""
+        """Проверка коммента авторизованным пользователем"""
         comment_count = Comment.objects.count()
         form_data = {
             'text': 'Тестовый комментарий'
