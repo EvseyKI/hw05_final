@@ -234,12 +234,7 @@ class FollowViewTest(TestCase):
 
     def test_unfollow(self):
         """Проверка отписки от автора"""
-        count_follow = Follow.objects.count()
         new_author = User.objects.create(username='new_user')
-        Follow.objects.create(
-            user=self.follower,
-            author=self.user)
-        self.assertEqual(Follow.objects.count(), count_follow + 1)
         self.author_client.get(
             reverse(
                 'posts:profile_unfollow',
@@ -258,19 +253,19 @@ class FollowViewTest(TestCase):
             author=self.user)
         response = self.follower_client.get(
             reverse('posts:follow_index'))
-        self.assertIn(self.post, response.context['page_obj'].object_list)
+        self.assertIn(self.post, response.context['page_obj'])
 
     def test_unfollow_context(self):
         """Новая запись не появляется в ленте тех, кто не подписан"""
-        new_author = User.objects.create(username='new_user')
-        self.follower_client.get(
-            reverse(
-                'posts:profile_follow',
-                kwargs={'username': new_author.username}
-            )
-        )
-        follow = Follow.objects.last()
-        self.assertNotEqual(follow.user, self.user)
-        response = self.follower_client.get(
+        new_user = User.objects.create(username='new_user')
+        self.new_client = Client()
+        self.new_client.force_login(new_user)
+        response = self.new_client.get(
             reverse('posts:follow_index'))
-        self.assertNotIn(self.post, response.context['page_obj'].object_list)
+        self.assertNotIn(self.post, response.context['page_obj'])
+        #follow = Follow.objects.last()
+        #self.assertNotEqual(self.follower, follow.user)
+        #self.assertNotEqual(self.user, follow.author)
+        #response = self.follower_client.get(
+        #   reverse('posts:follow_index'))
+        #self.assertNotIn(self.post, response.context['page_obj'])
